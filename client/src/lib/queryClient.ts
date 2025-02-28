@@ -12,7 +12,13 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const API_URL = import.meta.env.MODE === "production"
+    ? "https://cornellagestion-app-production.up.railway.app"
+    : "http://localhost:5000";
+
+  const fullUrl = url.startsWith("/api") ? `${API_URL}${url}` : url;
+
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -29,7 +35,15 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    const API_URL = import.meta.env.MODE === "production"
+      ? "https://cornellagestion-app-production.up.railway.app"
+      : "http://localhost:5000";
+
+    const fullUrl = (queryKey[0] as string).startsWith("/api")
+      ? `${API_URL}${queryKey[0]}`
+      : (queryKey[0] as string);
+
+    const res = await fetch(fullUrl, {
       credentials: "include",
     });
 
