@@ -28,14 +28,11 @@ export default defineConfig({
       "@shared": path.resolve(__dirname, "shared"),
     },
   },
-  root: path.resolve(__dirname, "client"),
   build: {
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
     rollupOptions: {
-      input: {
-        main: path.resolve(__dirname, "client", "index.html"),
-      },
+      input: path.resolve(__dirname, "client", "src", "main.tsx"), // Ajustamos la entrada
     },
   },
 });
