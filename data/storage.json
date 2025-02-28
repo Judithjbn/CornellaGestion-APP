@@ -1,0 +1,31 @@
+{
+  "users": {
+    "1": {
+      "username": "Admin",
+      "password": "e8add6a3645a02ebc0ac077c75c0b62249c1224e2bc1c6c53870fd9f5e034ef9159f1bec2b7e946997488dce16e0eb2e5a3e57c6ae10f069b6171ee4d10616b8.83ba2b2382ff4b7e20df57b95a820216",
+      "id": 1
+    }
+  },
+  "forms": {
+    "1": {
+      "title": "Formulario de prueba",
+      "description": "test",
+      "fields": [
+        {
+          "id": "312d2298-9447-45c6-b507-45b179a6b376",
+          "type": "text",
+          "label": "nombre",
+          "required": false
+        }
+      ],
+      "createdAt": "2025-02-28T19:20:46.296Z",
+      "id": 1
+    }
+  },
+  "submissions": {},
+  "counters": {
+    "userId": 2,
+    "formId": 2,
+    "submissionId": 1
+  }
+}
