@@ -8,9 +8,11 @@ import { insertUserSchema } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+
 
 export default function AuthPage() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { user, loginMutation } = useAuth();
 
   const loginForm = useForm({
@@ -21,10 +23,11 @@ export default function AuthPage() {
     },
   });
 
-  if (user) {
-    setLocation("/admin/forms");
-    return null;
-  }
+  useEffect(() => {
+    if (user) {
+      setLocation("/admin/forms");
+    }
+  }, [user, setLocation]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">

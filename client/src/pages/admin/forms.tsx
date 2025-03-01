@@ -81,9 +81,9 @@ export default function FormsPage() {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Formularios</h1>
+    <div className="p-4 md:p-6 lg:p-8">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <h1 className="text-2xl sm:text-3xl font-bold">Formularios</h1>
         <Button onClick={() => setIsCreating(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Crear Formulario
@@ -114,17 +114,17 @@ export default function FormsPage() {
         </Card>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {forms?.map((form) => (
-          <Card key={form.id}>
+          <Card key={form.id} className="flex flex-col">
             <CardHeader>
-              <CardTitle>{form.title}</CardTitle>
+              <CardTitle className="line-clamp-1">{form.title}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
+            <CardContent className="flex-1">
+              <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                 {form.description}
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button
                   variant="outline"
                   className="flex-1"
@@ -132,20 +132,22 @@ export default function FormsPage() {
                 >
                   Ver Formulario
                 </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setEditingForm(form)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setFormToDelete(form)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setEditingForm(form)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setFormToDelete(form)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
