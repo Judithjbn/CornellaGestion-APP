@@ -10,24 +10,24 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
+  data?: unknown | undefined
 ): Promise<Response> {
-  const API_URL = import.meta.env.MODE === "production"
-    ? "https://cornellagestion-app-production.up.railway.app"
-    : "http://localhost:5000";
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-  const fullUrl = url.startsWith("/api") ? `${API_URL}${url}` : url;
-
-  const res = await fetch(fullUrl, {
+  const res = await fetch(`${API_BASE_URL}${url}`, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
 
-  await throwIfResNotOk(res);
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: ${await res.text()}`);
+  }
+
   return res;
 }
+
 
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
