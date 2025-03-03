@@ -26,6 +26,10 @@ export default function FormsPage() {
 
   const { data: forms, isLoading } = useQuery<Form[]>({
     queryKey: ["/api/forms"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/forms");
+      return res.json();
+    },
   });
 
   const createFormMutation = useMutation({
@@ -72,6 +76,11 @@ export default function FormsPage() {
     },
   });
 
+  const handleViewForm = (formId: number) => {
+    const formUrl = `${window.location.origin}/form/${formId}`;
+    window.open(formUrl, "_blank");
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -82,8 +91,8 @@ export default function FormsPage() {
 
   return (
     <div className="p-4 md:p-6 lg:p-8">
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-      <h1 className="text-2xl sm:text-3xl font-bold">Formularios</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold">Formularios</h1>
         <Button onClick={() => setIsCreating(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Crear Formulario
@@ -93,7 +102,7 @@ export default function FormsPage() {
       {(isCreating || editingForm) && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>{editingForm ? 'Editar Formulario' : 'Nuevo Formulario'}</CardTitle>
+            <CardTitle>{editingForm ? "Editar Formulario" : "Nuevo Formulario"}</CardTitle>
           </CardHeader>
           <CardContent>
             <FormBuilder
@@ -125,11 +134,7 @@ export default function FormsPage() {
                 {form.description}
               </p>
               <div className="flex flex-col sm:flex-row gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => window.open(`/form/${form.id}`, '_blank')}
-                >
+                <Button variant="outline" className="flex-1" onClick={() => handleViewForm(form.id)}>
                   Ver Formulario
                 </Button>
                 <div className="flex gap-2">
