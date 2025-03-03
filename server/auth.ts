@@ -6,6 +6,29 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
+import jwt from "jsonwebtoken";
+import { Request, Response, NextFunction } from "express";
+
+interface AuthenticatedRequest extends Request {
+  user?: SelectUser;
+}
+
+export function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Unauthorized: No token provided" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as SelectUser;
+    req.user = decoded; // Guardar usuario autenticado en `req`
+    next(); // Continuar con la siguiente función
+  } catch (error) {
+    return res.status(401).json({ error: "Unauthorized: Invalid token" });
+  }
+}
 
 declare global {
   namespace Express {
@@ -84,12 +107,12 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: Error, user: SelectUser, info: any) => {
       if (err) return next(err);
       if (!user) {
         return res.status(401).json({ message: info?.message || "Error de autenticación" });
       }
-      req.login(user, (err) => {
+      req.login(user, (err: Error) => {
         if (err) return next(err);
         // Remove password from response
         const { password, ...userWithoutPassword } = user;
@@ -99,7 +122,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/logout", (req, res, next) => {
-    req.logout((err) => {
+    req.logout((err: Error) => {
       if (err) return next(err);
       res.sendStatus(200);
     });

@@ -4,6 +4,7 @@ import { setupAuth, setupDefaultUser } from "./auth";
 import { storage } from "./storage";
 import { format } from "date-fns";
 import { sendFormSubmissionEmail } from './email';
+import { authMiddleware } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Crear usuario por defecto
@@ -24,14 +25,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(form);
   });
 
-  app.post("/api/forms", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const form = await storage.createForm(req.body);
-    res.status(201).json(form);
+  app.post("/api/forms", authMiddleware, async (req, res) => {
+    try {
+      const form = await storage.createForm(req.body);
+      res.status(201).json(form);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create form" });
+    }
   });
 
-  app.put("/api/forms/:id", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
+  app.put("/api/forms/:id", authMiddleware, async (req, res) => {
     try {
       const formId = parseInt(req.params.id);
       const form = await storage.updateForm(formId, req.body);
@@ -45,8 +48,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/forms/:id", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
+  app.delete("/api/forms/:id", authMiddleware, async (req, res) => {
     try {
       const formId = parseInt(req.params.id);
       await storage.deleteForm(formId);
@@ -72,6 +74,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: req.body,
         submittedAt: new Date().toISOString(),
       });
+
+      // Validar que form.title, req.body y form.fields estén definidos
+      if (!form.title || !req.body || !form.fields) {
+        throw new Error("Invalid form data");
+      }
 
       // Enviar correo electrónico con las etiquetas de los campos
       await sendFormSubmissionEmail(form.title, req.body, form.fields);
