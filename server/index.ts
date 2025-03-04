@@ -1,4 +1,4 @@
-import express, { type Request, Response, NextFunction } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import session from "express-session";
 import { registerRoutes } from "./routes";
@@ -6,7 +6,23 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
+// Configurar CORS para producción y desarrollo
+const corsOptions = {
+  origin: process.env.NODE_ENV === "production"
+    ? "https://cornella-gestio.netlify.app"
+    : "http://localhost:5173",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
 
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// Configuración de sesiones
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "supersecreto",
@@ -20,19 +36,7 @@ app.use(
   })
 );
 
-const corsOptions = {
-  origin: ["https://cornella-gestio.netlify.app"],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-};
-
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-
+// Middleware para registrar logs de las solicitudes
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -51,11 +55,9 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-
       if (logLine.length > 80) {
         logLine = logLine.slice(0, 79) + "…";
       }
-
       log(logLine);
     }
   });
@@ -64,31 +66,38 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  const server = await registerRoutes(app);
+  try {
+    const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    // Manejo global de errores
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      console.error("❌ Error en el servidor:", err);
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
-  });
+      res.status(status).json({ message });
+    });
 
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
-  const port = 5000;
-  server.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`serving on port ${port}`);
+    // Servir archivos estáticos o Vite en desarrollo
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
     }
-  );
+
+    // Iniciar el servidor
+    const port = process.env.PORT || 5000;
+    server.listen(
+      {
+        port: Number(port),
+        host: "0.0.0.0",
+        reusePort: true,
+      },
+      () => {
+        log(`🚀 Servidor corriendo en el puerto ${port}`);
+      }
+    );
+  } catch (error) {
+    console.error("❌ Error al iniciar el servidor:", error);
+  }
 })();
