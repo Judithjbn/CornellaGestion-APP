@@ -5,11 +5,8 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-const cors = require('cors');
 
-app.use(cors());
-
-// Configurar CORS para producción y desarrollo
+// 🔹 Configurar CORS correctamente antes de otras reglas
 const corsOptions = {
   origin: process.env.NODE_ENV === "production"
     ? "https://cornella-gestio.netlify.app"
@@ -19,13 +16,11 @@ const corsOptions = {
   credentials: true,
 };
 
+// 🔹 Aplicar CORS antes de cualquier otra configuración
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+app.options("*", cors(corsOptions)); // Manejar preflight requests
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-
-// Configuración de sesiones
+// 🔹 Configuración de sesiones (asegurar que esté después de CORS)
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "supersecreto",
@@ -39,7 +34,10 @@ app.use(
   })
 );
 
-// Middleware para registrar logs de las solicitudes
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// 🔹 Middleware para registrar logs de las solicitudes
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -72,7 +70,7 @@ app.use((req, res, next) => {
   try {
     const server = await registerRoutes(app);
 
-    // Manejo global de errores
+    // 🔹 Manejo global de errores
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       console.error("❌ Error en el servidor:", err);
       const status = err.status || err.statusCode || 500;
@@ -81,14 +79,14 @@ app.use((req, res, next) => {
       res.status(status).json({ message });
     });
 
-    // Servir archivos estáticos o Vite en desarrollo
+    // 🔹 Servir archivos estáticos o Vite en desarrollo
     if (app.get("env") === "development") {
       await setupVite(app, server);
     } else {
       serveStatic(app);
     }
 
-    // Iniciar el servidor
+    // 🔹 Iniciar el servidor
     const port = process.env.PORT || 5000;
     server.listen(
       {
