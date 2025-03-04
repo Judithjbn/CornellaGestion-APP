@@ -5,6 +5,9 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+const cors = require('cors');
+
+app.use(cors());
 
 // Configurar CORS para producción y desarrollo
 const corsOptions = {
