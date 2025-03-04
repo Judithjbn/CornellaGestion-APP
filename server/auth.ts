@@ -13,8 +13,13 @@ interface AuthenticatedRequest extends Request {
   user?: SelectUser;
 }
 
+// 🔹 Middleware que permite tanto JWT como sesiones
 export function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
+
+  if (req.isAuthenticated()) {
+    return next(); // Ya está autenticado con sesión
+  }
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Unauthorized: No token provided" });
@@ -23,7 +28,7 @@ export function authMiddleware(req: AuthenticatedRequest, res: Response, next: N
   const token = authHeader.split(" ")[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET) as SelectUser;
-    req.user = decoded; // Guardar usuario autenticado en `req`
+    req.user = decoded;
     next(); // Continuar con la siguiente función
   } catch (error) {
     return res.status(401).json({ error: "Unauthorized: Invalid token" });
@@ -51,11 +56,10 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
+// 🔹 Crear usuario Admin por defecto si no existe
 export async function setupDefaultUser() {
-  // Comprobar si el usuario Admin ya existe
   const existingUser = await storage.getUserByUsername("Admin");
   if (!existingUser) {
-    // Crear el usuario por defecto
     const hashedPassword = await hashPassword("CornellaAtletic1974");
     await storage.createUser({
       username: "Admin",
@@ -66,14 +70,14 @@ export async function setupDefaultUser() {
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || 'development_secret_key',
+    secret: process.env.SESSION_SECRET || "development_secret_key",
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    }
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000, // 24 horas
+    },
   };
 
   app.set("trust proxy", 1);
@@ -92,11 +96,10 @@ export function setupAuth(app: Express) {
       } catch (error) {
         return done(error);
       }
-    }),
+    })
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
-
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
@@ -106,6 +109,7 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // 🔹 Login ahora devuelve un token JWT
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err: Error, user: SelectUser, info: any) => {
       if (err) return next(err);
@@ -114,13 +118,21 @@ export function setupAuth(app: Express) {
       }
       req.login(user, (err: Error) => {
         if (err) return next(err);
-        // Remove password from response
-        const { password, ...userWithoutPassword } = user;
-        res.json(userWithoutPassword);
+
+        // 🔹 Generar un token JWT
+        const token = jwt.sign(
+          { id: user.id, username: user.username },
+          process.env.JWT_SECRET as string,
+          { expiresIn: "24h" }
+        );
+
+        // 🔹 Enviar token junto con los datos del usuario
+        res.json({ token, user: { id: user.id, username: user.username } });
       });
     })(req, res, next);
   });
 
+  // 🔹 Logout: Eliminar sesión
   app.post("/api/logout", (req, res, next) => {
     req.logout((err: Error) => {
       if (err) return next(err);
@@ -128,11 +140,12 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) {
+  // 🔹 Obtener usuario autenticado
+  app.get("/api/user", authMiddleware, (req, res) => {
+    if (!req.user) {
       return res.sendStatus(401);
     }
-    // Remove password from response
+    // Quitar la contraseña del usuario antes de responder
     const { password, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
   });
