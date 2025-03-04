@@ -12,7 +12,10 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined
 ): Promise<Response> {
-  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const API_BASE_URL =
+  import.meta.env.MODE === "production"
+    ? "https://cornellagestion-app-production.up.railway.app"
+    : "http://localhost:5000";
   const fullUrl = url.startsWith("/api") ? `${API_BASE_URL}${url}` : url;
 
   const token = localStorage.getItem("token");
